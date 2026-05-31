@@ -60,6 +60,7 @@ Q4 STATE EQUIVALENCE: How will Treasury certify state
 
 TAGGING & CLASSIFICATION RULES:
 - Be conservative with Q1-Q4 tags. Only tag an update with a question if the development provides material, actionable insight or formal proposals regarding that specific question.
+- Pay particular attention to Federal Reserve proposals regarding reserve account access, payment system risk policy, and discount window eligibility — these directly inform Q3 even when they do not mention stablecoins by name.
 - Strict Direction Criteria:
   - "Stricter": The development raises compliance overhead, increases capital/liquidity ratios, or restricts issuer eligibility.
   - "More Permissive": The development lowers barriers, expands permitted reserves, or simplifies state certification.

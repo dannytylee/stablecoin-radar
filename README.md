@@ -263,12 +263,18 @@ As regulatory frameworks evolve, subsequent versions should integrate the follow
 - Standard classification instruction. Q1-Q4 tags assigned based on simple topic matching. 
 - "Direction" left to the LLM's default reasoning without formal definitions.
 
-### Prompt v2 (Tightened Version)
+### Prompt v2 (Tightened Tagging Rules)
 - **Problem**: Analysis showed over-tagging (assigning Q1-Q4 tags to tangential news) and ambiguous direction values.
 - **Change**: Added explicit `TAGGING & CLASSIFICATION RULES` defining strict criteria:
   - Conservative tagging threshold (material proposals/actionable insights only).
   - Concrete boundaries for "Stricter", "More Permissive", "Clarifying", and "Ambiguous".
 - **Result**: Drastically reduced classification noise, improving clarity in daily summary briefs.
+
+### Prompt v3 (Federal Reserve Policy Specialization)
+- **Problem**: Coordinated Federal Reserve proposals (Reg D, Reg A, and Payment System Risk policies) regarding special-purpose payment accounts for stablecoin reserves were being under-classified as "None" because they did not explicitly mention "stablecoin" by name.
+- **Change**: Added specific instruction directing the LLM to analyze Fed proposals on reserve account access, payment system risk, and discount window eligibility, mapping them directly to Q3 (Capital Requirements) and Q1 (Issuer Definition).
+- **Result**: Correctly tags and analyzes coordinated central bank rulemaking impacting stablecoin reserve infrastructure.
+
 
 
 
