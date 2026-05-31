@@ -65,7 +65,8 @@ Q5 AML/SANCTIONS PROGRAM REQUIREMENTS: What anti-money laundering (AML),
    reporting (SAR) requirements apply to payment stablecoin issuers and platforms?
 
 TAGGING & CLASSIFICATION RULES:
-- Be conservative with Q1-Q5 tags. Only tag an update with a question if the development provides material, actionable insight or formal proposals regarding that specific question. If it does not directly inform any, tag as "None".
+- Be conservative with Q1-Q5 tags. Only tag an update with a question if the development provides material, actionable, and significant proposals or changes for that specific question.
+- Strictly limit Q1-Q5 tags. An update should rarely inform more than 1 or 2 questions. Do not over-tag with multiple questions unless they are explicitly and deeply addressed by the update. If a question is only peripherally mentioned or not materially informed, do not tag it. If no questions are materially informed, use "None".
 - Pay particular attention to Federal Reserve proposals regarding reserve account access, payment system risk policy, and discount window eligibility — these directly inform Q3 even when they do not mention stablecoins by name.
 - Strict Direction Criteria:
   - "Stricter": The development raises compliance overhead, increases capital/liquidity ratios, or restricts issuer eligibility.
@@ -246,33 +247,35 @@ def fetch_regulations_gov(since_date):
                 })
         except Exception as e:
             print(f"Error fetching from Regulations.gov with params {q_params}: {e}")
-            if api_key == "DEMO_KEY":
-                print("[Demo Mode] Regulations.gov rate limit hit. Injecting mock comment for FDIC-2026-0001 (Fiserv) to verify docket parser and prompt compliance.")
-                comment_id = "FDIC-2026-0001-0045"
-                if comment_id not in seen_comments:
-                    seen_comments.add(comment_id)
-                    items.append({
-                        "source": "Regulations.gov",
-                        "title": "Comment on FDIC-2026-0001 (FDIC): Comment letter submitted by Fiserv, Inc. regarding FIUSD stablecoin white-label issuer structure",
-                        "abstract": "Fiserv, Inc. appreciates the opportunity to comment on the proposed rule. Regarding white-label issuer structures for FIUSD, we believe that the definition of a permitted payment stablecoin issuer (Q1) should explicitly include platform-mediated arrangements where bank-custodied reserves are managed via APIs. Specifically, we advise against requiring white-label distributors to hold separate banking master accounts, as this would restrict access to capital (Q3). Instead, the primary partner bank should be treated as the sole permitted issuer under a state-licensed equivalence framework (Q4) with robust AML/sanctions screenings (Q5) integrated at the ledger level.",
-                        "agency": "FDIC",
-                        "type": "Public Comment",
-                        "url": "https://www.regulations.gov/comment/FDIC-2026-0001-0045",
-                        "date": "2026-05-15",
-                        "doc_number": comment_id,
-                    })
+            error_id = "REGULATIONS_GOV_ERROR"
+            if error_id not in seen_comments:
+                seen_comments.add(error_id)
+                items.append({
+                    "source": "Regulations.gov",
+                    "title": "REGULATIONS.GOV UNAVAILABLE — Rate Limited or Auth Failure",
+                    "abstract": f"The Regulations.gov scraper was unable to retrieve docket comments due to an API error: {e}. Please check your REGULATIONS_GOV_API_KEY.",
+                    "agency": "Regulations.gov",
+                    "type": "API Error Warning",
+                    "url": "N/A",
+                    "date": since_date,
+                    "doc_number": error_id,
+                })
             
     return items
 
-def generate_fallback_brief(items, error_message=""):
+def generate_fallback_brief(items, run_date, error_message=""):
     """Generate a simple raw-links brief when OpenAI analysis fails."""
-    date_str = datetime.utcnow().strftime("%B %d, %Y")
+    try:
+        dt = datetime.strptime(run_date, "%Y-%m-%d")
+        run_date_formatted = dt.strftime("%B %d, %Y")
+    except Exception:
+        run_date_formatted = run_date
     
     # Calculate days until deadline (GENIUS Act: July 18, 2026)
     deadline = datetime(2026, 7, 18)
     days_left = (deadline - datetime.utcnow()).days
     
-    brief = f"STABLECOIN REGULATORY RADAR — {date_str} (FALLBACK BRIEF)\n\n"
+    brief = f"STABLECOIN REGULATORY RADAR — {run_date_formatted} (FALLBACK BRIEF)\n\n"
     brief += f"⚠️ WARNING: OpenAI analysis failed ({error_message or 'Unknown error'}).\n"
     brief += "Below is the raw list of regulatory developments fetched today. Please review the links manually.\n\n"
     
@@ -365,20 +368,26 @@ def fetch_rss_feeds(since_date):
             
     return items
 
-def analyze(items):
+def analyze(items, run_date):
     """Send items to GPT-4o for analysis."""
     api_key = os.environ.get("OPENAI_API_KEY")
+    try:
+        dt = datetime.strptime(run_date, "%Y-%m-%d")
+        run_date_formatted = dt.strftime("%B %d, %Y")
+    except Exception:
+        run_date_formatted = run_date
+
     if not api_key:
         print("Warning: OPENAI_API_KEY environment variable is not set. Using fallback brief.")
-        return generate_fallback_brief(items, "OPENAI_API_KEY missing")
+        return generate_fallback_brief(items, run_date, "OPENAI_API_KEY missing")
 
     if not items:
-        return f"STABLECOIN REGULATORY RADAR — {datetime.utcnow().strftime('%B %d, %Y')}\n\nNO_UPDATES\n\nQuiet day. No new stablecoin-related regulatory items detected across monitored sources."
+        return f"STABLECOIN REGULATORY RADAR — {run_date_formatted}\n\nNO_UPDATES\n\nQuiet day. No new stablecoin-related regulatory items detected across monitored sources."
 
     try:
         client = OpenAI(api_key=api_key)
         
-        user_msg = f"Today's date: {datetime.utcnow().strftime('%B %d, %Y')}\n\n"
+        user_msg = f"The execution run date is: {run_date_formatted} (Use this date in the exact title header format: STABLECOIN REGULATORY RADAR — {run_date_formatted}).\n\n"
         user_msg += "Items from the last 24 hours:\n\n"
         for i, item in enumerate(items, 1):
             user_msg += f"[{i}] {item['source']}\n"
@@ -405,7 +414,7 @@ def analyze(items):
         return resp.choices[0].message.content
     except Exception as e:
         print(f"Error during OpenAI API call: {e}")
-        return generate_fallback_brief(items, str(e))
+        return generate_fallback_brief(items, run_date, str(e))
 
 
 def send_email(brief, date):
