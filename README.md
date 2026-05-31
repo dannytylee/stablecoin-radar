@@ -1,43 +1,79 @@
-# Stablecoin Regulatory Radar (v1)
+# Stablecoin Regulatory Radar (v3 - Active Intelligence)
 
-A daily agent that monitors primary regulatory sources and key industry press for new stablecoin regulations, scores them against the four open GENIUS Act regulatory questions using GPT-4o, logs updates to Google Sheets, and alerts stakeholders via Gmail.
+An active, daily regulatory intelligence agent that monitors primary regulatory sources, dockets, and key industry press for new stablecoin rules and commentary. It parses updates using GPT-4o, maps developments against five critical tracking questions, rates their materiality (1–5), logs structured metrics and state deduplication hashes to Google Sheets, and alerts stakeholders with suggested outreach talking points via Gmail.
 
 ---
 
 ## 🛰️ Architecture Overview
 
 ```
-               [ AWS EventBridge (Daily at 8am PT) ]
-                               │
-                               ▼
-                   [ AWS Lambda (Python 3.11) ]
-                               │
-       ┌───────────────────────┼────────────────────────┐
-       ▼                       ▼                        ▼
-[ Federal Register ]     [ RSS Feeds ]          [ OpenAI GPT-4o ]
-  API conditions:          • CoinDesk             • Analyze entries
-  "stablecoin",            • Cointelegraph        • Match vs. Q1-Q4
-  "digital asset",         • Sheppard Mullin      • Determine direction
-  "payment token"          • K&L Gates            • Generate Brief
-       │                       │                        │
-       └───────────┬───────────┘                        │
-                   ▼                                    ▼
-           [ Fetch & Filter ] ──────────────► [ Deliver Brief ]
-                                                        │
-                                     ┌──────────────────┴──────────────────┐
-                                     ▼                                     ▼
-                              [ Gmail SMTP ]                       [ Google Sheets ]
-                              Daily Alert Email                    Append to Log Sheet
+                          [ AWS EventBridge (Daily at 8am PT) ]
+                                           │
+                                           ▼
+                               [ AWS Lambda (Python 3.11) ]
+                                           │
+    ┌─────────────────────┬────────────────┴───────────────┬──────────────────────┐
+    ▼                     ▼                                ▼                      ▼
+[ Federal Register ]  [ Regulations.gov ]            [ RSS Feeds ]          [ OpenAI GPT-4o ]
+  API conditions:       Polling /v4/comments           • CoinDesk             • Analyze entries
+  "stablecoin",         • "stablecoin" query           • Cointelegraph        • Match vs. Q1-Q5
+  "digital asset",      • OCC-2025-0372 docket         • Sheppard Mullin      • Materiality (1-5)
+  "payment token"       • FDIC-2026-0001 docket        • K&L Gates            • Suggested Outreach
+    │                     │                                │                      │
+    └───────────┬─────────┴────────────────┬───────────────┘                      │
+                ▼                          ▼                                      ▼
+             [ Fetch & Validate ] ──► [ SeenItems Deduplication ] ──────► [ Deliver Brief ]
+                                                                                  │
+                                                               ┌──────────────────┴──────────────────┐
+                                                               ▼                                     ▼
+                                                        [ Gmail SMTP ]                       [ Google Sheets ]
+                                                        Daily Alert Email                    • SeenItems (State log)
+                                                                                             • StructuredLog (Metrics)
 ```
+
+---
+
+## 📂 Project Structure & Directory Tree
+
+```text
+stablecoin-regulatory-agent/
+├── .env                              # Local environment variables (ignored by git)
+├── .gitignore                        # Excludes environment files, credentials, and zip packages
+├── Stablecoin Radar Logger.json      # Google Cloud Service Account credentials (ignored by git)
+├── requirements.txt                  # Python dependencies (requests, feedparser, openai, gspread, oauth2client)
+├── package.sh                        # Shell packaging script for AWS Lambda (compiles x86_64 binaries)
+├── lambda_function.py                # Main application handler (polling, deduplication, LLM, logging, emailing)
+├── test_regs_api.py                  # Standalone verification script for the Regulations.gov API v4
+├── deployment.zip                    # Compiled Lambda deployment package (ignored by git)
+└── README.md                         # Project documentation and architectural setup guide
+```
+
+---
+
+## 📊 Active Data Sources
+
+The agent aggregates primary regulatory documents, official agency feeds, legal analysis, and trade press:
+
+| Source Category | Endpoint / Details | Target Content |
+| :--- | :--- | :--- |
+| **Federal Register** | `https://www.federalregister.gov/api/v1` | Documents matching `"stablecoin"`, `"digital asset"`, or `"payment token"` |
+| **Regulations.gov** | `https://api.regulations.gov/v4/comments` | Comment letters matching search `"stablecoin"`, and full docket reviews for high-value rulemaking: <br>• **OCC-2025-0372** (National Bank Reserve Accounts)<br>• **FDIC-2026-0001** (Deposit Insurance Rules) |
+| **Federal Reserve** | Official RSS Press Feed | Press releases, policy statements, and discount window/payment system risk updates |
+| **FDIC** | Official RSS Press Feed | Board decisions, enforcement actions, and deposit insurance proposals |
+| **Top-Tier Legal Blogs** | Law firm RSS Feeds | Regulatory analysis and legal briefs:<br>• **K&L Gates** (FinTech Law Watch)<br>• **Sheppard Mullin** (Law of the Ledger) |
+| **Crypto Press** | Industry News RSS Feeds | Market sentiment, legislative drafts, and policy reactions:<br>• **CoinDesk**<br>• **Cointelegraph** |
+
+---
 
 ## 📋 The Five Tracking Questions (GENIUS Act Framework)
 
-Each regulatory development is analyzed and scored against:
-1. **Q1: Issuer Definition** — Who qualifies as a "permitted payment stablecoin issuer" in white-label/platform arrangements?
+Regulatory developments are evaluated by the LLM and categorized against the five open regulatory gaps of the GENIUS Act (Guiding and Establishing National Innovation for US Stablecoins):
+
+1. **Q1: Issuer Definition** — Who qualifies as a "permitted payment stablecoin issuer" in white-label and platform-mediated arrangements?
 2. **Q2: Attestation Standard** — What does "examined by a registered public accounting firm" require in practice? (AICPA 2025 Criteria vs. Lighter standard)
-3. **Q3: Capital Requirements** — What capital, liquidity, and risk management rules apply?
+3. **Q3: Capital Requirements** — What capital, liquidity, and risk management requirements apply to stablecoin issuers?
 4. **Q4: State Equivalence** — How will Treasury certify state regulatory regimes as "substantially similar" to federal?
-5. **Q5: AML/Sanctions Program Requirements** — What AML, KYC, sanctions screening, and suspicious activity reporting (SAR) requirements apply?
+5. **Q5: AML/Sanctions Program Requirements** — What AML, KYC, sanctions screening, and suspicious activity reporting (SAR) regulations apply?
 
 ---
 
@@ -49,8 +85,8 @@ Ensure you have Python 3.11+ installed.
 pip install -r requirements.txt
 ```
 
-### 2. Configure Credentials via .env (Automated)
-Instead of copy-pasting API keys every time, a local `.env` file is automatically loaded at startup. Create a `.env` file at the root of the workspace:
+### 2. Configure Credentials via .env
+Create a `.env` file at the root of the workspace:
 
 ```env
 # API Keys
@@ -67,8 +103,6 @@ SPREADSHEET_ID="your-spreadsheet-id"
 GOOGLE_SHEETS_CREDENTIALS_PATH="/path/to/your/google-credentials.json"
 SHEET_NAME="Sheet1"
 ```
-
-Once this file is filled out, you can run the agent locally without exporting or copy-pasting any commands.
 
 ---
 
@@ -92,6 +126,12 @@ python3 lambda_function.py --since 2026-05-01 --test-email
 Run standard execution (which looks back 24 hours):
 ```bash
 python3 lambda_function.py
+```
+
+### 4. Regulations.gov Scraper Verification
+Verify that Regulations.gov API v4 is communicating and parsing comment letters correctly:
+```bash
+python3 test_regs_api.py
 ```
 
 ---
@@ -188,7 +228,7 @@ ROLE_ARN=$(aws iam get-role --role-name stablecoin-radar-execution-role --query 
 ```
 
 ### Step 2: Create the Lambda Function
-Package the zip (using `./package.sh`) and run:
+Package the zip (using `./package.sh`) and run (using your target region, e.g., `us-east-2`):
 ```bash
 aws lambda create-function \
   --function-name stablecoin-radar \
@@ -198,6 +238,7 @@ aws lambda create-function \
   --role "$ROLE_ARN" \
   --timeout 120 \
   --memory-size 128 \
+  --region us-east-2 \
   --environment "Variables={OPENAI_API_KEY=sk-proj-...,GMAIL_APP_PASSWORD=xxxx,RECIPIENT=your-email@gmail.com,SENDER=your-email@gmail.com}"
 ```
 
@@ -221,43 +262,25 @@ aws lambda add-permission \
   --statement-id EventBridgeTrigger \
   --action lambda:InvokeFunction \
   --principal events.amazonaws.com \
+  --region us-east-2 \
   --source-arn "$RULE_ARN"
 ```
 
 Map the EventBridge trigger target to the Lambda function:
 ```bash
 # Get the Lambda Function ARN
-LAMBDA_ARN=$(aws lambda get-function --function-name stablecoin-radar --query "Configuration.FunctionArn" --output text)
+LAMBDA_ARN=$(aws lambda get-function --function-name stablecoin-radar --region us-east-2 --query "Configuration.FunctionArn" --output text)
 
 # Map the Target to EventBridge
 aws events put-targets \
   --rule daily-8am-pacific \
+  --region us-east-2 \
   --targets "Id"="1","Arn"="$LAMBDA_ARN"
 ```
 
 ---
 
----
-
-## 🔮 Roadmap & Future Scope (v2+)
-
-As regulatory frameworks evolve, subsequent versions should integrate the following advanced tracking features:
-
-### 1. Future Agent Integrations
-* **Regulations.gov API**: Add docket tracking (e.g., `OCC-2025-0372`, `FDIC RIN 3064-AG19`, and `FinCEN` rules) to scan public comment letters submitted by industry leaders (Circle, ABA, Fiserv). This directly informs attestation and white-label arrangements.
-* **Scraper Bypasses for Tier 1 Law Firms**: Build web scrapers (using headless tools or proxies) for **Sullivan & Cromwell**, **Sidley Austin**, and **Davis Polk** insights pages to bypass their programmatic blockages (`403 Forbidden`).
-* **Wyoming Stable Token Commission**: Poll and scrape `https://stabletoken.wyo.gov/` for monthly attestation filings and minutes.
-* **LegiScan API**: Fetch and filter 50-state bills matching "stablecoin" to monitor local regulatory progress.
-
-### 2. What Users Should Manually Track (Outside the Agent)
-* **OFAC Recent Actions**: Treasury has retired the OFAC RSS feed. Users must subscribe to the [U.S. Treasury's Email Delivery Service](https://service.govdelivery.com/service/subscribe.html?code=USTREAS_61) to receive immediate sanctions announcements.
-* **AICPA Digital Assets Resource Page**: Since AICPA doesn't offer RSS, check their portal monthly for updates regarding the Stablecoin Reporting Criteria.
-* **NCUA Newsroom**: Sign up for [NCUA Express](https://www.ncua.gov/newsroom) updates to monitor credit union stablecoin rules.
-
-
----
-
-## 🔄 Iteration Log (Prompt Versioning)
+## 🔄 Iteration Log (Prompt & System Versioning)
 
 ### Prompt v1 (Initial Version)
 - Standard classification instruction. Q1-Q4 tags assigned based on simple topic matching. 
@@ -275,6 +298,13 @@ As regulatory frameworks evolve, subsequent versions should integrate the follow
 - **Change**: Added specific instruction directing the LLM to analyze Fed proposals on reserve account access, payment system risk, and discount window eligibility, mapping them directly to Q3 (Capital Requirements) and Q1 (Issuer Definition).
 - **Result**: Correctly tags and analyzes coordinated central bank rulemaking impacting stablecoin reserve infrastructure.
 
-
-
-
+### System v3 Upgrade (Active Intelligence Infrastructure)
+- **Problem**: Monitoring was purely passive RSS and Federal Register scraping; it missed active regulatory comments (e.g. fromCircle, ABA, Fiserv), could log duplicate items on consecutive runs, lacked structured metrics logging, and would crash if OpenAI failed.
+- **Change**: 
+  - Integrated **Regulations.gov API v4** for active comment letter monitoring.
+  - Implemented Google Sheets-based persistent state deduplication (`SeenItems` worksheet).
+  - Created a daily structured metrics logger (`StructuredLog` worksheet) to feed dashboards.
+  - Expanded categories to include **Q5 AML/Sanctions** tracking.
+  - Introduced **Materiality scoring (1-5)** and conditional **Suggested Outreach BD directives** for Materiality 4-5 items.
+  - Wrapped LLM calls in a robust fallback block to generate raw-links briefs on API failures.
+- **Result**: Transformed the aggregator into a resilient, production-grade intelligence infrastructure.
