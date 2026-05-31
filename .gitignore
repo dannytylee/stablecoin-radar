@@ -1,0 +1,19 @@
+# Secrets and local configurations
+.env
+Stablecoin*.json
+*.json
+mock_email_brief.txt
+deployment.zip
+
+# Python caches and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+
+# OS specific files
+.DS_Store
+Thumbs.db

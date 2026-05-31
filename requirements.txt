@@ -1,0 +1,5 @@
+openai
+feedparser
+requests
+gspread
+google-auth
