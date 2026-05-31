@@ -702,7 +702,7 @@ def handler(event, context):
     print(f"Deduplication: Filtered out {seen_count} already-seen items. {len(unseen_items)} unseen items remaining.")
     
     # 3. Analyze
-    brief = analyze(unseen_items)
+    brief = analyze(unseen_items, yesterday)
     print("\n--- ANALYSIS BRIEF ---")
     print(brief)
     print("----------------------\n")
@@ -772,7 +772,7 @@ if __name__ == '__main__':
         print(f"Deduplication: Filtered out {seen_count} already-seen items. {len(unseen_items)} unseen items remaining.")
 
     # Analyze
-    brief = analyze(unseen_items)
+    brief = analyze(unseen_items, since_date)
     
     print("\n--- ANALYSIS BRIEF ---")
     print(brief)
