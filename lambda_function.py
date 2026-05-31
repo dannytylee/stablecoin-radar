@@ -229,7 +229,13 @@ def fetch_regulations_gov(since_date):
                 title = attributes.get("title", "")
                 posted_date = attributes.get("postedDate", "")
                 agency_id = attributes.get("agencyId", "Unknown")
-                docket_id = attributes.get("docketId", "Unknown")
+                docket_id = attributes.get("docketId")
+                if not docket_id and comment_id:
+                    parts = comment_id.split("-")
+                    if len(parts) >= 3:
+                        docket_id = "-".join(parts[:-1])
+                if not docket_id:
+                    docket_id = "Unknown"
                 comment_text = attributes.get("comment", "")
                 
                 display_title = f"Comment on {docket_id} ({agency_id}): {title}"
