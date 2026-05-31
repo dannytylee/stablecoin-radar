@@ -84,7 +84,7 @@ Assign a materiality score from 1 (lowest) to 5 (highest) to each item using the
 - 1 (Minimal): General industry commentary, news, or articles with little to no direct relevance to stablecoin regulation or issuer compliance.
 
 SUGGESTED OUTREACH RULES:
-- If and only if the item has a Materiality score of 4 or 5, you MUST include a "Suggested Outreach" line in the brief. This line should be a one-sentence recommendation of who to contact (e.g., Anthony Apollo, Rick, a specific issuer, a CPA firm, or state regulator) and the exact angle or talking point to start a conversation based on this update.
+- If and only if the item has a Materiality score of 4 or 5, you MUST include a "Suggested Outreach" line in the brief. This line should be a one-sentence recommendation of who to contact (preferring a named contact from the dynamically provided STAKEHOLDER REGISTRY when their focus areas/role align with the update, or falling back to a generic role like a CPA firm, state regulator, or specific issuer) and the exact angle or talking point to start a conversation based on this update.
 - If the Materiality score is 1, 2, or 3, do NOT include the "Suggested Outreach" line in the brief.
 
 YOUR TASK:
@@ -391,6 +391,23 @@ def analyze(items, run_date):
         return f"STABLECOIN REGULATORY RADAR — {run_date_formatted}\n\nNO_UPDATES\n\nQuiet day. No new stablecoin-related regulatory items detected across monitored sources."
 
     try:
+        # Load stakeholder registry from Google Sheets (excluding Contact Info PII)
+        stakeholders = load_stakeholder_registry()
+        system_prompt_custom = SYSTEM_PROMPT
+        if stakeholders:
+            registry_str = "\n\nSTAKEHOLDER REGISTRY (Use these registered contacts for 'Suggested Outreach' recommendations when key focus areas align):\n"
+            for sh in stakeholders:
+                name = sh.get("Name")
+                org = sh.get("Organization")
+                role = sh.get("Role")
+                focus = sh.get("Key Focus Areas")
+                if name:
+                    registry_str += f"- Name: {name}\n"
+                    if org: registry_str += f"  Organization: {org}\n"
+                    if role: registry_str += f"  Role: {role}\n"
+                    if focus: registry_str += f"  Key Focus Areas: {focus}\n"
+            system_prompt_custom += registry_str
+
         client = OpenAI(api_key=api_key)
         
         user_msg = f"The execution run date is: {run_date_formatted} (Use this date in the exact title header format: STABLECOIN REGULATORY RADAR — {run_date_formatted}).\n\n"
@@ -413,7 +430,7 @@ def analyze(items, run_date):
             model="gpt-4o",
             temperature=0.3,
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": system_prompt_custom},
                 {"role": "user", "content": user_msg},
             ]
         )
@@ -500,6 +517,37 @@ def get_gspread_client():
     except Exception as e:
         print(f"Error authenticating with Google Sheets: {e}")
         return None, None
+
+def load_stakeholder_registry():
+    """Fetch stakeholder registry from the 'StakeholderRegistry' worksheet in Google Sheets."""
+    client, spreadsheet_id = get_gspread_client()
+    if not client or not spreadsheet_id:
+        print("Google Sheets not configured. Skipping loading stakeholder registry.")
+        return []
+        
+    try:
+        try:
+            sheet = client.open_by_key(spreadsheet_id).worksheet("StakeholderRegistry")
+        except Exception:
+            print("StakeholderRegistry sheet not found. Creating a blank template with mock examples...")
+            try:
+                sheet = client.open_by_key(spreadsheet_id).add_worksheet(title="StakeholderRegistry", rows="100", cols="5")
+                sheet.append_row(["Name", "Organization", "Role", "Key Focus Areas", "Contact Info"])
+                # Add default mock template rows to demonstrate configuration
+                sheet.append_rows([
+                    ["Rick", "Partner Bank", "Head of Liquidity", "Q3, reserve accounts, liquidity limits, payment accounts", "rick@partnerbank.example.com"],
+                    ["Anthony Apollo", "Wyoming Stable Token Commission", "Commission Director", "Q4, state equivalence, Wyoming rules", "anthony@wyomingstabletoken.example.com"],
+                    ["CPA Contact", "Accounting Firm", "Auditor Partner", "Q2, attestation standard, audit criteria", "audits@cpa.example.com"]
+                ])
+            except Exception as creation_err:
+                print(f"Could not create StakeholderRegistry sheet: {creation_err}")
+                return []
+            
+        records = sheet.get_all_records()
+        return records
+    except Exception as e:
+        print(f"Error loading stakeholder registry: {e}")
+        return []
 
 def log_to_sheets(brief, date):
     """Append brief to Google Sheets using gspread."""
