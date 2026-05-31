@@ -58,6 +58,14 @@ Q3 CAPITAL REQUIREMENTS: What capital, liquidity, and risk
 Q4 STATE EQUIVALENCE: How will Treasury certify state 
    regulatory regimes as "substantially similar" to federal?
 
+TAGGING & CLASSIFICATION RULES:
+- Be conservative with Q1-Q4 tags. Only tag an update with a question if the development provides material, actionable insight or formal proposals regarding that specific question.
+- Strict Direction Criteria:
+  - "Stricter": The development raises compliance overhead, increases capital/liquidity ratios, or restricts issuer eligibility.
+  - "More Permissive": The development lowers barriers, expands permitted reserves, or simplifies state certification.
+  - "Clarifying": The development resolves operational procedures without changing the overall compliance burden.
+  - "Ambiguous": The development introduces competing signals or depends on future interpretations.
+
 YOUR TASK:
 
 If there are NO relevant new developments today, respond 

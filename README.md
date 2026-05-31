@@ -59,8 +59,8 @@ OPENAI_API_KEY="your-openai-api-key"
 GMAIL_APP_PASSWORD="your-gmail-app-password"
 
 # Email Settings
-RECIPIENT="dannylee0210@gmail.com"
-SENDER="dannylee0210@gmail.com"
+RECIPIENT="your-email@gmail.com"
+SENDER="your-email@gmail.com"
 
 # Google Sheets Logging
 SPREADSHEET_ID="your-spreadsheet-id"
@@ -128,8 +128,8 @@ Run the provided packaging script. This compiles all dependencies into a clean `
 3. In the **Environment variables** sidebar, click **Edit** and add:
    - `OPENAI_API_KEY` = `sk-proj-...`
    - `GMAIL_APP_PASSWORD` = `xxxx xxxx xxxx xxxx` (Your Gmail App Password)
-   - `RECIPIENT` = `dannylee0210@gmail.com`
-   - `SENDER` = `dannylee0210@gmail.com`
+   - `RECIPIENT` = `your-email@gmail.com`
+   - `SENDER` = `your-email@gmail.com`
    - `SPREADSHEET_ID` = `(Optional)`
    - `GOOGLE_SHEETS_CREDENTIALS` = `(Optional JSON string)`
    - `SHEET_NAME` = `Sheet1` (Optional)
@@ -198,7 +198,7 @@ aws lambda create-function \
   --role "$ROLE_ARN" \
   --timeout 120 \
   --memory-size 128 \
-  --environment "Variables={OPENAI_API_KEY=sk-proj-...,GMAIL_APP_PASSWORD=xxxx,RECIPIENT=dannylee0210@gmail.com,SENDER=dannylee0210@gmail.com}"
+  --environment "Variables={OPENAI_API_KEY=sk-proj-...,GMAIL_APP_PASSWORD=xxxx,RECIPIENT=your-email@gmail.com,SENDER=your-email@gmail.com}"
 ```
 
 ### Step 3: Create EventBridge Rule & Targets
@@ -253,5 +253,22 @@ As regulatory frameworks evolve, subsequent versions should integrate the follow
 * **OFAC Recent Actions**: Treasury has retired the OFAC RSS feed. Users must subscribe to the [U.S. Treasury's Email Delivery Service](https://service.govdelivery.com/service/subscribe.html?code=USTREAS_61) to receive immediate sanctions announcements.
 * **AICPA Digital Assets Resource Page**: Since AICPA doesn't offer RSS, check their portal monthly for updates regarding the Stablecoin Reporting Criteria.
 * **NCUA Newsroom**: Sign up for [NCUA Express](https://www.ncua.gov/newsroom) updates to monitor credit union stablecoin rules.
+
+
+---
+
+## 🔄 Iteration Log (Prompt Versioning)
+
+### Prompt v1 (Initial Version)
+- Standard classification instruction. Q1-Q4 tags assigned based on simple topic matching. 
+- "Direction" left to the LLM's default reasoning without formal definitions.
+
+### Prompt v2 (Tightened Version)
+- **Problem**: Analysis showed over-tagging (assigning Q1-Q4 tags to tangential news) and ambiguous direction values.
+- **Change**: Added explicit `TAGGING & CLASSIFICATION RULES` defining strict criteria:
+  - Conservative tagging threshold (material proposals/actionable insights only).
+  - Concrete boundaries for "Stricter", "More Permissive", "Clarifying", and "Ambiguous".
+- **Result**: Drastically reduced classification noise, improving clarity in daily summary briefs.
+
 
 
