@@ -30,15 +30,14 @@ A daily agent that monitors primary regulatory sources and key industry press fo
                               Daily Alert Email                    Append to Log Sheet
 ```
 
----
-
-## 📋 The Four Tracking Questions (GENIUS Act Framework)
+## 📋 The Five Tracking Questions (GENIUS Act Framework)
 
 Each regulatory development is analyzed and scored against:
 1. **Q1: Issuer Definition** — Who qualifies as a "permitted payment stablecoin issuer" in white-label/platform arrangements?
 2. **Q2: Attestation Standard** — What does "examined by a registered public accounting firm" require in practice? (AICPA 2025 Criteria vs. Lighter standard)
 3. **Q3: Capital Requirements** — What capital, liquidity, and risk management rules apply?
 4. **Q4: State Equivalence** — How will Treasury certify state regulatory regimes as "substantially similar" to federal?
+5. **Q5: AML/Sanctions Program Requirements** — What AML, KYC, sanctions screening, and suspicious activity reporting (SAR) requirements apply?
 
 ---
 
@@ -56,6 +55,7 @@ Instead of copy-pasting API keys every time, a local `.env` file is automaticall
 ```env
 # API Keys
 OPENAI_API_KEY="your-openai-api-key"
+REGULATIONS_GOV_API_KEY="your-regulations-gov-api-key"
 GMAIL_APP_PASSWORD="your-gmail-app-password"
 
 # Email Settings
@@ -64,7 +64,7 @@ SENDER="your-email@gmail.com"
 
 # Google Sheets Logging
 SPREADSHEET_ID="your-spreadsheet-id"
-GOOGLE_SHEETS_CREDENTIALS_PATH="/Users/danny/Downloads/Stablecoin Radar Logger.json"
+GOOGLE_SHEETS_CREDENTIALS_PATH="/path/to/your/google-credentials.json"
 SHEET_NAME="Sheet1"
 ```
 
