@@ -32,6 +32,8 @@ def load_env_file():
 # Automatically load local variables if .env exists
 load_env_file()
 
+IS_CLI = False
+
 # ── Config & Defaults ───────────────────────────────────
 FEDERAL_REGISTER_URL = "https://www.federalregister.gov/api/v1/documents.json"
 
@@ -553,13 +555,15 @@ def log_to_sheets(brief, date):
     """Append brief to Google Sheets using gspread."""
     client, spreadsheet_id = get_gspread_client()
     sheet_name = os.environ.get("SHEET_NAME", "Sheet1")
+    if IS_CLI:
+        sheet_name += "_Dev"
     
     if not client or not spreadsheet_id:
         print("Google Sheets not configured. Skipping logging.")
         return False
         
     try:
-        print("Logging results to Google Sheets using gspread...")
+        print(f"Logging results to Google Sheets ({sheet_name}) using gspread...")
         sheet = client.open_by_key(spreadsheet_id).worksheet(sheet_name)
         sheet.append_row([date, brief])
         print("Logged to Google Sheets successfully via gspread.")
@@ -575,17 +579,18 @@ def get_seen_keys():
         print("Google Sheets not configured. Bypassing deduplication sheet lookup.")
         return set()
         
+    sheet_name = "SeenItems_Dev" if IS_CLI else "SeenItems"
     try:
         try:
-            sheet = client.open_by_key(spreadsheet_id).worksheet("SeenItems")
+            sheet = client.open_by_key(spreadsheet_id).worksheet(sheet_name)
         except Exception:
             # Create it if it doesn't exist
-            print("SeenItems worksheet not found. Creating a new one...")
+            print(f"{sheet_name} worksheet not found. Creating a new one...")
             try:
-                sheet = client.open_by_key(spreadsheet_id).add_worksheet(title="SeenItems", rows="1000", cols="4")
+                sheet = client.open_by_key(spreadsheet_id).add_worksheet(title=sheet_name, rows="1000", cols="4")
                 sheet.append_row(["Timestamp", "Source", "Title", "DedupKey"])
             except Exception as e:
-                print(f"Could not create SeenItems sheet: {e}")
+                print(f"Could not create {sheet_name} sheet: {e}")
                 return set()
         
         # Read the DedupKey column (column 4)
@@ -608,15 +613,16 @@ def mark_items_as_seen(items):
         print("Google Sheets not configured. Skipping marking items as seen.")
         return
         
+    sheet_name = "SeenItems_Dev" if IS_CLI else "SeenItems"
     try:
-        sheet = client.open_by_key(spreadsheet_id).worksheet("SeenItems")
+        sheet = client.open_by_key(spreadsheet_id).worksheet(sheet_name)
     except Exception:
         # Create it if it doesn't exist
         try:
-            sheet = client.open_by_key(spreadsheet_id).add_worksheet(title="SeenItems", rows="1000", cols="4")
+            sheet = client.open_by_key(spreadsheet_id).add_worksheet(title=sheet_name, rows="1000", cols="4")
             sheet.append_row(["Timestamp", "Source", "Title", "DedupKey"])
         except Exception as e:
-            print(f"Could not create/open SeenItems sheet to mark seen: {e}")
+            print(f"Could not create/open {sheet_name} sheet to mark seen: {e}")
             return
             
     rows = []
@@ -690,13 +696,14 @@ def log_structured_metrics_to_sheets(date, metrics):
         print("Google Sheets not configured. Skipping structured metrics logging.")
         return False
         
+    sheet_name = "StructuredLog_Dev" if IS_CLI else "StructuredLog"
     try:
         try:
-            sheet = client.open_by_key(spreadsheet_id).worksheet("StructuredLog")
+            sheet = client.open_by_key(spreadsheet_id).worksheet(sheet_name)
         except Exception:
-            print("StructuredLog worksheet not found. Creating a new one...")
+            print(f"{sheet_name} worksheet not found. Creating a new one...")
             try:
-                sheet = client.open_by_key(spreadsheet_id).add_worksheet(title="StructuredLog", rows="1000", cols="9")
+                sheet = client.open_by_key(spreadsheet_id).add_worksheet(title=sheet_name, rows="1000", cols="9")
                 sheet.append_row([
                     "Date", 
                     "Items Surfaced", 
@@ -792,6 +799,7 @@ def handler(event, context):
 lambda_handler = handler
 
 if __name__ == '__main__':
+    IS_CLI = True
     parser = argparse.ArgumentParser(description="Stablecoin Regulatory Radar CLI Runner")
     parser.add_argument("--since", type=str, help="Start date for scanning (YYYY-MM-DD). Defaults to yesterday.")
     parser.add_argument("--dry-run", action="store_true", help="Print brief and do not send email or log to Sheets.")
