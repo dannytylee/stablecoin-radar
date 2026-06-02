@@ -1,4 +1,4 @@
-# Stablecoin Regulatory Radar (v3 - Active Intelligence)
+# Stablecoin Regulatory Radar
 
 An active, daily regulatory intelligence agent that monitors primary regulatory sources, dockets, and key industry press for new stablecoin rules and commentary. It parses updates using GPT-4o, maps developments against five critical tracking questions, rates their materiality (1–5), logs structured metrics and state deduplication hashes to Google Sheets, and alerts stakeholders with suggested outreach talking points via Gmail.
 
@@ -308,3 +308,21 @@ aws events put-targets \
   - Introduced **Materiality scoring (1-5)** and conditional **Suggested Outreach BD directives** for Materiality 4-5 items.
   - Wrapped LLM calls in a robust fallback block to generate raw-links briefs on API failures.
 - **Result**: Transformed the aggregator into a resilient, production-grade intelligence infrastructure.
+
+---
+
+## 🔮 Roadmap & Future Scope
+
+The roadmap for the next phase focuses strictly on **acting on the generated intelligence** to drive business development outreach (warm lead generation), rather than adding monitoring noise.
+
+### 1. High-Priority Features (Action-Driven)
+* **Automatic Stakeholder Recommendations (Warm Leads)**: Scrapes public comments on OCC/FDIC dockets to identify and pre-qualify commenters. This turns the radar into a lead-generation engine, enabling opening outreach like: *"I read your public comment on FDIC-2026-0001..."*
+* **Auto-Drafting Outreach (Activation-Starter)**: Generates a ready-to-customize email or message template directly within the brief for the matched stakeholder. This lowers the activation energy of starting outreach (to be used as first drafts only, avoiding automated sending).
+
+### 2. Deferred Features
+* **LegiScan Integration**: Track 50-state bills matching "stablecoin". Deferred until post-customer acquisition, as state bills move over quarters/seasons rather than days.
+
+### 3. Descoped Features (Explicitly Dropped)
+* **Wyoming STC Scraper**: Dropped. Wyoming Commission filings are monthly and should be read manually to ensure personal alignment with targets.
+* **Law Firm Web Scrapers**: Dropped. Bypass engineering effort is too high. Regulatory updates can be tracked via free, open Baker McKenzie feeds.
+* **Materiality 5 SMS/Slack Alerts**: Dropped. Major critical events happen infrequently (3-4 times a quarter). The daily 8:00 AM summary email is completely sufficient.
