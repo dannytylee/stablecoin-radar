@@ -444,9 +444,9 @@ def analyze(items, run_date):
 
 def send_email(brief, date):
     """Send via Gmail SMTP."""
-    gmail_user = os.environ.get("SENDER")
-    gmail_password = os.environ.get("GMAIL_APP_PASSWORD")
     recipient = os.environ.get("RECIPIENT")
+    gmail_user = os.environ.get("SENDER") or recipient
+    gmail_password = os.environ.get("GMAIL_APP_PASSWORD")
     
     if not gmail_user or not recipient:
         print("SENDER and/or RECIPIENT environment variables not set. Skipping email sending.")
